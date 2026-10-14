@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduAcessível Web - Gestão Escolar (Frequência, Boletim e Comunicados)</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --font-scale: 1;
+            --bg-body: #f4f7fb;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #475569;
+            --primary-color: #0d47a1;
+            --border-color: #cbd5e1;
+        }
+
+        html {
+            font-size: calc(16px * var(--font-scale));
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        /* Foco visível aprimorado para navegação via teclado (WCAG 2.1 AA/AAA) */
+        *:focus-visible {
+            outline: 3px solid #ff9800 !important;
+            outline-offset: 2px !important;
+        }
+
+        /* Modo de Alto Contraste (WCAG 2.1 AAA - Fundo Preto / Texto Branco e Amarelo) */
+        body.high-contrast {
+            --bg-body: #000000;
+            --bg-card: #0a0a0a;
+            --text-main: #ffffff;
+            --text-muted: #ffff00;
+            --primary-color: #ffff00;
+            --border-color: #ffff00;
+            background-color: #000000 !important;
+            color: #ffffff !important;
+        }
+
+        body.high-contrast .card,
+        body.high-contrast .modal-content,
+        body.high-contrast .navbar,
+        body.high-contrast .accessibility-bar,
+        body.high-contrast .table,
+        body.high-contrast .form-control,
+        body.high-contrast .form-select {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            border: 2px solid #ffff00 !important;
+        }
+
+        body.high-contrast .table th,
+        body.high-contrast .table td {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            border-color: #ffff00 !important;
+        }
+
+        body.high-contrast h1,
+        body.high-contrast h2,
+        body.high-contrast h3,
+        body.high-contrast h4,
+        body.high-contrast h5,
+        body.high-contrast .kpi-value,
+        body.high-contrast a,
+        body.high-contrast label {
+            color: #ffff00 !important;
+        }
+
+        body.high-contrast .btn-primary,
+        body.high-contrast .btn-success,
+        body.high-contrast .btn-outline-primary,
+        body.high-contrast .btn-outline-dark {
+            background-color: #ffff00 !important;
+            color: #000000 !important;
+            border: 2px solid #ffffff !important;
+            font-weight: 700 !important;
+        }
+
+        body.high-contrast .btn-danger,
+        body.high-contrast .badge.bg-danger {
+            background-color: #ff3b30 !important;
+            color: #ffffff !important;
+            border: 2px solid #ffff00 !important;
+        }
+
+        .accessibility-bar {
+            background-color: #0b2545;
+            color: #ffffff;
+            padding: 0.45rem 1rem;
+            font-size: 0.9rem;
+            border-bottom: 2px solid #134074;
+        }
+
+        .accessibility-bar a,
+        .accessibility-bar button {
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .hero-header {
+            background: linear-gradient(135deg, #0d47a1 0%, #1565c0 100%);
+            color: #ffffff;
+            padding: 1.4rem 0;
+            border-bottom: 4px solid #ffb300;
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 0.65rem;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .kpi-card {
+            border-left: 5px solid #0d47a1;
+        }
+        .kpi-card.kpi-alerta {
+            border-left-color: #d32f2f;
+        }
+        .kpi-value {
+            font-size: 1.85rem;
+            font-weight: 800;
+            color: #0d47a1;
+        }
+        .kpi-alerta .kpi-value {
+            color: #d32f2f;
+        }
+
+        /* Oculta recursos exclusivos da v2.0 quando em modo de simulação do Protótipo Inicial v1.0 */
+        body.modo-v1 .recurso-v2 {
+            display: none !important;
+        }
+
+        /* Estilo de Impressão do Boletim */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #areaImpressaoBoletim, #areaImpressaoBoletim * {
+                visibility: visible;
+            }
+            #areaImpressaoBoletim {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                border: none !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Barra Superior de Acessibilidade WCAG 2.1 -->
+    <nav class="accessibility-bar" aria-label="Barra de ferramentas de acessibilidade WCAG 2.1">
+        <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="d-flex flex-wrap gap-3 align-items-center">
+                <a href="#conteudo-principal" accesskey="1" class="badge bg-secondary" title="Atalho Alt+1: Ir para Chamada e Boletim">
+                    Ir para Conteúdo [Alt+1]
+                </a>
+                <a href="#mural-comunicados" accesskey="2" class="badge bg-secondary" title="Atalho Alt+2: Ir para Mural de Comunicados">
+                    Ir para Comunicados [Alt+2]
+                </a>
+                <a href="#busca-input" accesskey="3" class="badge bg-secondary recurso-v2" title="Atalho Alt+3: Ir para Busca">
+                    Ir para Busca [Alt+3]
+                </a>
+            </div>
+
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <!-- Seletor de Versão para facilitar fotos do Relatório (Figura 2 vs Figura 3) -->
+                <div class="btn-group btn-group-sm me-2" role="group" aria-label="Alternar versão do protótipo">
+                    <button type="button" id="btnModoV2" class="btn btn-warning fw-bold" onclick="definirVersao('v2')" title="Exibir Solução Final v2.0 Completa">
+                        Solução Final (v2.0)
+                    </button>
+                    <button type="button" id="btnModoV1" class="btn btn-outline-light" onclick="definirVersao('v1')" title="Simular Protótipo Inicial v1.0 da 4ª Quinzena">
+                        Protótipo Inicial (v1.0)
+                    </button>
+                </div>
+
+                <button type="button" class="btn btn-sm btn-outline-light recurso-v2" onclick="alterarFonte(0.1)" aria-label="Aumentar tamanho da fonte">
+                    <i class="bi bi-zoom-in" aria-hidden="true"></i> A+
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-light recurso-v2" onclick="alterarFonte(0)" aria-label="Tamanho original da fonte">
+                    Aº
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-light recurso-v2" onclick="alterarFonte(-0.1)" aria-label="Diminuir tamanho da fonte">
+                    <i class="bi bi-zoom-out" aria-hidden="true"></i> A-
+                </button>
+                <button type="button" id="btnContraste" accesskey="c" class="btn btn-sm btn-light text-dark fw-semibold recurso-v2" onclick="alternarContraste()" aria-pressed="false" aria-label="Alternar modo de alto contraste WCAG">
+                    <i class="bi bi-circle-half" aria-hidden="true"></i> Alto Contraste [Alt+C]
+                </button>
+                <button type="button" class="btn btn-sm btn-danger recurso-v2" onclick="pararLeituraVoz()" aria-label="Parar leitura em voz alta">
+                    <i class="bi bi-stop-circle" aria-hidden="true"></i> Parar Áudio
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Cabeçalho Institucional -->
+    <header class="hero-header">
+        <div class="container d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-mortarboard-fill fs-2" aria-hidden="true"></i>
+                    <h1 class="h3 mb-0 fw-bold">EduAcessível Web <span id="badgeVersaoHeader" class="badge bg-warning text-dark fs-6 ms-1">v2.0 Final</span></h1>
+                </div>
+                <p class="mb-0 mt-1 opacity-90">
+                    Sistema Web Acessível de Gestão Escolar: Módulo de Frequência, Boletim e Comunicados — Suzano/SP (PI II Univesp)
+                </p>
+            </div>
+            <div class="text-end">
+                <span class="badge bg-light text-dark p-2">
+                    <i class="bi bi-universal-access-circle text-primary me-1" aria-hidden="true"></i>
+                    Compatível com WCAG 2.1, NVDA e VLibras
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Região ARIA Live para anunciar atualizações ao leitor de tela NVDA -->
+    <div id="statusAriaLive" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
+
+    <main id="conteudo-principal" class="container my-4">
+
+        <!-- Painel de Indicadores em Tempo Real (KPIs - Adicionado na v2.0) -->
+        <section class="row g-3 mb-4 recurso-v2" aria-label="Indicadores acadêmicos e alertas de evasão em tempo real">
+            <div class="col-6 col-lg-3">
+                <div class="card kpi-card p-3 h-100">
+                    <span class="text-muted small fw-semibold text-uppercase">Total de Estudantes</span>
+                    <div class="kpi-value mt-1" id="kpiTotalAlunos">0</div>
+                    <small class="text-muted">Matriculados nas turmas</small>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="card kpi-card p-3 h-100">
+                    <span class="text-muted small fw-semibold text-uppercase">Média Geral Bimestral</span>
+                    <div class="kpi-value mt-1" id="kpiMediaGeral">0.0</div>
+                    <small class="text-muted">Desempenho das turmas</small>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="card kpi-card p-3 h-100">
+                    <span class="text-muted small fw-semibold text-uppercase">Taxa Média de Presença</span>
+                    <div class="kpi-value mt-1" id="kpiFrequenciaMedia">0%</div>
+                    <small class="text-muted">Meta legal mínima: 75%</small>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="card kpi-card kpi-alerta p-3 h-100">
+                    <span class="text-danger small fw-bold text-uppercase">
+                        <i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>Alertas de Evasão (&lt;75%)
+                    </span>
+                    <div class="kpi-value mt-1" id="kpiAlertasEvasao">0</div>
+                    <small class="text-danger fw-semibold">Acionar Busca Ativa / Família</small>
+                </div>
+            </div>
+        </section>
+
+        <div class="row g-4">
+            <!-- Coluna Principal: Controle de Frequência e Boletim (8 colunas) -->
+            <div class="col-lg-8">
+                <section class="card p-3 p-md-4 mb-4" aria-labelledby="titulo-gestao-alunos">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                        <h2 id="titulo-gestao-alunos" class="h5 mb-0 fw-bold">
+                            <i class="bi bi-journal-check text-primary me-2" aria-hidden="true"></i>
+                            Controle Diário de Frequência e Boletim Bimestral
+                        </h2>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="/api/exportar_csv" class="btn btn-sm btn-outline-success fw-semibold recurso-v2" aria-label="Exportar relatório de chamada e notas para planilha Excel CSV">
+                                <i class="bi bi-file-earmark-spreadsheet me-1" aria-hidden="true"></i> Exportar CSV
+                            </a>
+                            <button class="btn btn-sm btn-primary fw-semibold" data-bs-toggle="collapse" data-bs-target="#collapseNovoAluno" aria-expanded="false" aria-controls="collapseNovoAluno">
+                                <i class="bi bi-person-plus-fill me-1" aria-hidden="true"></i> + Cadastrar Aluno
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Formulário retrátil para Cadastrar Novo Aluno -->
+                    <div class="collapse mb-3" id="collapseNovoAluno">
+                        <div class="card card-body bg-light border">
+                            <h3 class="h6 fw-bold mb-3">Novo Cadastro de Estudante</h3>
+                            <form id="formNovoAluno" class="row g-2">
+                                <div class="col-md-2">
+                                    <label for="raAluno" class="form-label small fw-semibold">RA *</label>
+                                    <input type="text" id="raAluno" class="form-control form-control-sm" placeholder="2026007" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="nomeAluno" class="form-label small fw-semibold">Nome Completo *</label>
+                                    <input type="text" id="nomeAluno" class="form-control form-control-sm" placeholder="Ex: Gabriel Silva" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label for="turmaAluno" class="form-label small fw-semibold">Turma *</label>
+                                    <select id="turmaAluno" class="form-select form-select-sm" required>
+                                        <option value="9º Ano A">9º Ano A</option>
+                                        <option value="9º Ano B">9º Ano B</option>
+                                        <option value="8º Ano A">8º Ano A</option>
+                                    </select>
+                                </div>
+                                <div class="col-6 col-md-2">
+                                    <label for="nota1Aluno" class="form-label small fw-semibold">Nota 1 (0-10)</label>
+                                    <input type="number" step="0.5" min="0" max="10" id="nota1Aluno" class="form-control form-control-sm" value="7.0" required>
+                                </div>
+                                <div class="col-6 col-md-2">
+                                    <label for="nota2Aluno" class="form-label small fw-semibold">Nota 2 (0-10)</label>
+                                    <input type="number" step="0.5" min="0" max="10" id="nota2Aluno" class="form-control form-control-sm" value="8.0" required>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <label for="aulasAluno" class="form-label small fw-semibold">Aulas Dadas</label>
+                                    <input type="number" min="1" id="aulasAluno" class="form-control form-control-sm" value="20" required>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <label for="presencasAluno" class="form-label small fw-semibold">Presenças</label>
+                                    <input type="number" min="0" id="presencasAluno" class="form-control form-control-sm" value="15" required>
+                                </div>
+                                <div class="col-md-6 d-flex align-items-end justify-content-end">
+                                    <button type="submit" class="btn btn-sm btn-success fw-bold px-4">
+                                        <i class="bi bi-check2-circle me-1" aria-hidden="true"></i> Salvar Estudante
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Barra de Busca Dinâmica e Filtros (Melhoria da Solução Final v2.0) -->
+                    <div class="row g-2 mb-3 recurso-v2" role="search" aria-label="Filtros de busca de estudantes">
+                        <div class="col-md-5">
+                            <label for="busca-input" class="visually-hidden">Pesquisar por Nome ou RA</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+                                <input type="search" id="busca-input" class="form-control" placeholder="Buscar por nome ou RA..." oninput="carregarAlunos()">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filtroTurma" class="visually-hidden">Filtrar por Turma</label>
+                            <select id="filtroTurma" class="form-select form-select-sm" onchange="carregarAlunos()">
+                                <option value="">Todas as Turmas</option>
+                                <option value="9º Ano A">9º Ano A</option>
+                                <option value="9º Ano B">9º Ano B</option>
+                                <option value="8º Ano A">8º Ano A</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="filtroSituacao" class="visually-hidden">Filtrar por Situação Acadêmica</label>
+                            <select id="filtroSituacao" class="form-select form-select-sm" onchange="carregarAlunos()">
+                                <option value="">Todos os Status</option>
+                                <option value="alerta_evasao">⚠️ Em Alerta de Faltas (&lt;75%)</option>
+                                <option value="alerta_geral">🚨 Qualquer Alerta (Faltas ou Nota)</option>
+                                <option value="regular">✅ Situação Regular / Aprovado</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Tabela Responsiva de Chamada e Notas -->
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" aria-label="Tabela de frequência e notas dos estudantes">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col">RA / Estudante</th>
+                                    <th scope="col">Turma</th>
+                                    <th scope="col" class="text-center">N1 / N2</th>
+                                    <th scope="col" class="text-center">Média</th>
+                                    <th scope="col" class="text-center">Frequência</th>
+                                    <th scope="col" class="text-center">Status</th>
+                                    <th scope="col" class="text-end">Chamada Rápida &amp; Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaAlunosBody">
+                                <!-- Preenchido via JavaScript (fetch API) -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Coluna Lateral: Mural Digital de Comunicados Acessíveis (4 colunas) -->
+            <div class="col-lg-4" id="mural-comunicados">
+                <section class="card p-3 p-md-4" aria-labelledby="titulo-mural">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 id="titulo-mural" class="h5 mb-0 fw-bold">
+                            <i class="bi bi-megaphone-fill text-warning me-2" aria-hidden="true"></i>
+                            Mural de Comunicados
+                        </h2>
+                        <span class="badge bg-primary">Voz + Libras</span>
+                    </div>
+
+                    <!-- Formulário para Publicar Novo Comunicado -->
+                    <form id="formComunicado" class="mb-4 p-3 bg-light rounded border">
+                        <h3 class="h6 fw-bold mb-2">Publicar Aviso Oficial</h3>
+                        <div class="mb-2">
+                            <label for="tituloComunicado" class="form-label small fw-semibold mb-1">Título do Comunicado *</label>
+                            <input type="text" id="tituloComunicado" class="form-control form-control-sm" placeholder="Ex: Entrega de Boletins" required>
+                        </div>
+                        <div class="mb-2">
+                            <label for="prioridadeComunicado" class="form-label small fw-semibold mb-1">Nível de Prioridade</label>
+                            <select id="prioridadeComunicado" class="form-select form-select-sm">
+                                <option value="Normal">Normal (Informativo)</option>
+                                <option value="Importante">Importante (Reunião / Evento)</option>
+                                <option value="Urgente">Urgente (Busca Ativa / Convocação)</option>
+                            </select>
+                        </div>
+                        <div class="mb-2">
+                            <label for="mensagemComunicado" class="form-label small fw-semibold mb-1">Texto da Mensagem *</label>
+                            <textarea id="mensagemComunicado" rows="2" class="form-control form-control-sm" placeholder="Digite o comunicado para pais e estudantes..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold">
+                            <i class="bi bi-send-fill me-1" aria-hidden="true"></i> Publicar no Mural
+                        </button>
+                    </form>
+
+                    <!-- Lista de Comunicados -->
+                    <div id="listaComunicados" class="d-flex flex-column gap-3" aria-live="polite">
+                        <!-- Preenchido via JavaScript -->
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal de Boletim Individual Imprimível e Acessível -->
+    <div class="modal fade" id="modalBoletim" tabindex="-1" aria-labelledby="modalBoletimLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" id="areaImpressaoBoletim">
+                <div class="modal-header bg-primary text-white">
+                    <h2 class="modal-title h5 fw-bold" id="modalBoletimLabel">
+                        <i class="bi bi-file-earmark-medical me-2" aria-hidden="true"></i>
+                        Boletim Escolar e Relatório de Assiduidade — Suzano/SP
+                    </h2>
+                    <button type="button" class="btn-close btn-close-white no-print" data-bs-dismiss="modal" aria-label="Fechar janela do boletim"></button>
+                </div>
+                <div class="modal-body" id="conteudoModalBoletim">
+                    <!-- Preenchido dinamicamente -->
+                </div>
+                <div class="modal-footer no-print">
+                    <button type="button" class="btn btn-outline-primary fw-semibold" id="btnOuvirBoletim">
+                        <i class="bi bi-volume-up-fill me-1" aria-hidden="true"></i> Ouvir Boletim (Síntese de Voz)
+                    </button>
+                    <button type="button" class="btn btn-success fw-semibold" onclick="window.print()">
+                        <i class="bi bi-printer-fill me-1" aria-hidden="true"></i> Imprimir / Salvar PDF
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="container text-center py-4 text-muted small border-top mt-4">
+        <p class="mb-0">
+            <strong>Projeto Integrador II — Eixo de Computação (UNIVESP - Polo Suzano/SP - 2026)</strong><br>
+            Desenvolvido com Python (Flask), SQLite3, Bootstrap 5, JavaScript ES6+, Web Speech API, WCAG 2.1 e VLibras.
+        </p>
+    </footer>
+
+    <!-- Widget Oficial Governamental VLibras (Tradução automática para Libras) -->
+    <div vw class="enabled">
+        <div vw-access-button class="active"></div>
+        <div vw-plugin-wrapper>
+            <div class="vw-plugin-top-wrapper"></div>
+        </div>
+    </div>
+    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+    <script>
+        new window.VLibras.Widget('https://vlibras.gov.br/app');
+    </script>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Lógica Front-End Assíncrona (Fetch API, Acessibilidade e Web Speech API) -->
+    <script>
+        let escalaFonteAtual = 1.0;
+        let cacheAlunos = [];
+
+        function anunciarParaLeitorDeTela(texto) {
+            const regiao = document.getElementById("statusAriaLive");
+            if (regiao) {
+                regiao.textContent = texto;
+            }
+        }
+
+        // Alternância entre v1.0 (Protótipo Inicial) e v2.0 (Solução Final)
+        function definirVersao(versao) {
+            const body = document.body;
+            const badge = document.getElementById("badgeVersaoHeader");
+            const btnV1 = document.getElementById("btnModoV1");
+            const btnV2 = document.getElementById("btnModoV2");
+
+            if (versao === 'v1') {
+                body.classList.add("modo-v1");
+                badge.textContent = "Protótipo Inicial v1.0 (4ª Quinzena)";
+                badge.className = "badge bg-info text-dark fs-6 ms-1";
+                btnV1.className = "btn btn-warning fw-bold";
+                btnV2.className = "btn btn-outline-light";
+                anunciarParaLeitorDeTela("Exibindo visualização do Protótipo Inicial versão 1.0.");
+            } else {
+                body.classList.remove("modo-v1");
+                badge.textContent = "v2.0 Solução Final";
+                badge.className = "badge bg-warning text-dark fs-6 ms-1";
+                btnV2.className = "btn btn-warning fw-bold";
+                btnV1.className = "btn btn-outline-light";
+                anunciarParaLeitorDeTela("Exibindo visualização da Solução Final versão 2.0 completa.");
+            }
+            carregarAlunos();
+            carregarComunicados();
+        }
+
+        // Redimensionamento tipográfico WCAG (A+, A-, Aº)
+        function alterarFonte(delta) {
+            if (delta === 0) {
+                escalaFonteAtual = 1.0;
+            } else {
+                escalaFonteAtual = Math.min(1.4, Math.max(0.85, +(escalaFonteAtual + delta).toFixed(2)));
+            }
+            document.documentElement.style.setProperty('--font-scale', escalaFonteAtual);
+            anunciarParaLeitorDeTela(`Tamanho da fonte ajustado para ${Math.round(escalaFonteAtual * 100)} por cento.`);
+        }
+
+        // Modo de Alto Contraste WCAG 2.1
+        function alternarContraste() {
+            const ativo = document.body.classList.toggle("high-contrast");
+            const btn = document.getElementById("btnContraste");
+            btn.setAttribute("aria-pressed", ativo ? "true" : "false");
+            anunciarParaLeitorDeTela(ativo ? "Modo de alto contraste ativado." : "Modo de alto contraste desativado.");
+        }
+
+        // Síntese de Voz Nativa (Web Speech API) em Português
+        function lerTextoEmVozAlta(texto) {
+            if (!('speechSynthesis' in window)) {
+                alert("Seu navegador não suporta leitura por síntese de voz (Web Speech API).");
+                return;
+            }
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(texto);
+            utterance.lang = "pt-BR";
+            utterance.rate = 1.0;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function pararLeituraVoz() {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                anunciarParaLeitorDeTela("Leitura em voz alta interrompida.");
+            }
+        }
+
+        // Atualiza os KPIs Superiores
+        async function carregarIndicadores() {
+            const resp = await fetch("/api/indicadores");
+            const kpi = await resp.json();
+            document.getElementById("kpiTotalAlunos").textContent = kpi.total_alunos;
+            document.getElementById("kpiMediaGeral").textContent = kpi.media_geral.toFixed(1);
+            document.getElementById("kpiFrequenciaMedia").textContent = `${kpi.frequencia_media.toFixed(1)}%`;
+            document.getElementById("kpiAlertasEvasao").textContent = kpi.alertas_evasao;
+        }
+
+        // Carrega a Tabela de Alunos com Filtros
+        async function carregarAlunos() {
+            const modoV1 = document.body.classList.contains("modo-v1");
+            const busca = modoV1 ? "" : document.getElementById("busca-input").value;
+            const turma = modoV1 ? "" : document.getElementById("filtroTurma").value;
+            const situacao = modoV1 ? "" : document.getElementById("filtroSituacao").value;
+
+            const params = new URLSearchParams({ busca, turma, situacao });
+            const resp = await fetch(`/api/alunos?${params.toString()}`);
+            const alunos = await resp.json();
+            cacheAlunos = alunos;
+
+            const tbody = document.getElementById("tabelaAlunosBody");
+            tbody.innerHTML = "";
+
+            if (alunos.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            Nenhum estudante encontrado para os filtros selecionados.
+                        </td>
+                    </tr>`;
+                await carregarIndicadores();
+                return;
+            }
+
+            alunos.forEach(a => {
+                const badgeFreqClass = a.alerta_frequencia ? "bg-danger" : "bg-success";
+                const badgeStatusClass = a.em_alerta ? "bg-danger" : "bg-success";
+
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>
+                        <div class="fw-bold">${a.nome}</div>
+                        <small class="text-muted">RA: ${a.ra}</small>
+                    </td>
+                    <td><span class="badge bg-secondary">${a.turma}</span></td>
+                    <td class="text-center">
+                        <span class="small">${a.nota1.toFixed(1)} | ${a.nota2.toFixed(1)}</span>
+                    </td>
+                    <td class="text-center fw-bold">${a.media.toFixed(1)}</td>
+                    <td class="text-center">
+                        <span class="badge ${badgeFreqClass}">
+                            ${a.frequencia_pct.toFixed(1)}% (${a.presencas}/${a.total_aulas})
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge ${badgeStatusClass}">${a.status}</span>
+                    </td>
+                    <td class="text-end">
+                        <div class="btn-group btn-group-sm" role="group" aria-label="Ações para ${a.nome}">
+                            <button type="button" class="btn btn-outline-success fw-semibold"
+                                onclick="registrarFrequencia(${a.id}, 'presenca', '${a.nome}')"
+                                aria-label="Registrar presença para ${a.nome}">
+                                + Presença
+                            </button>
+                            <button type="button" class="btn btn-outline-danger fw-semibold"
+                                onclick="registrarFrequencia(${a.id}, 'falta', '${a.nome}')"
+                                aria-label="Registrar falta para ${a.nome}">
+                                + Falta
+                            </button>
+                            <button type="button" class="btn btn-outline-primary fw-semibold recurso-v2"
+                                onclick="abrirBoletim(${a.id})"
+                                aria-label="Abrir boletim individual de ${a.nome}">
+                                <i class="bi bi-card-checklist" aria-hidden="true"></i> Boletim
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            await carregarIndicadores();
+        }
+
+        // Lançamento de Chamada Digital (+ Presença / + Falta)
+        async function registrarFrequencia(alunoId, tipo, nomeAluno) {
+            const resp = await fetch("/api/frequencia", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ aluno_id: alunoId, tipo })
+            });
+            if (resp.ok) {
+                const atualizado = await resp.json();
+                anunciarParaLeitorDeTela(
+                    `Registrada ${tipo === 'presenca' ? 'presença' : 'falta'} para ${nomeAluno}. ` +
+                    `Nova frequência: ${atualizado.frequencia_pct} por cento. Status: ${atualizado.status}.`
+                );
+                carregarAlunos();
+            }
+        }
+
+        // Exibe Modal do Boletim Individual
+        function abrirBoletim(alunoId) {
+            const a = cacheAlunos.find(item => item.id === alunoId);
+            if (!a) return;
+
+            const container = document.getElementById("conteudoModalBoletim");
+            container.innerHTML = `
+                <div class="p-2">
+                    <div class="row mb-3 border-bottom pb-2">
+                        <div class="col-sm-8">
+                            <h3 class="h5 fw-bold mb-1">${a.nome}</h3>
+                            <p class="mb-0 text-muted">Registro Acadêmico (RA): <strong>${a.ra}</strong> | Turma: <strong>${a.turma}</strong></p>
+                        </div>
+                        <div class="col-sm-4 text-sm-end mt-2 mt-sm-0">
+                            <span class="badge ${a.em_alerta ? 'bg-danger' : 'bg-success'} fs-6 p-2">${a.status}</span>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 text-center mb-3">
+                        <div class="col-4">
+                            <div class="p-3 border rounded">
+                                <div class="small text-muted">Avaliação Bimestral 1</div>
+                                <div class="h4 fw-bold mb-0">${a.nota1.toFixed(1)}</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-3 border rounded">
+                                <div class="small text-muted">Avaliação Bimestral 2</div>
+                                <div class="h4 fw-bold mb-0">${a.nota2.toFixed(1)}</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-3 border rounded bg-light">
+                                <div class="small text-muted">Média Final</div>
+                                <div class="h4 fw-bold text-primary mb-0">${a.media.toFixed(1)}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 border rounded mb-2">
+                        <h4 class="h6 fw-bold">Resumo de Assiduidade Escolar (Limite Legal LDB: Mínimo 75% de Presença)</h4>
+                        <p class="mb-1">
+                            Total de Aulas Ministradas: <strong>${a.total_aulas}</strong> |
+                            Presenças: <strong>${a.presencas}</strong> |
+                            Faltas Acumuladas: <strong>${a.faltas}</strong> |
+                            Percentual de Presença: <strong>${a.frequencia_pct.toFixed(1)}%</strong>
+                        </p>
+                        ${a.alerta_frequencia ? `
+                            <div class="alert alert-danger mb-0 mt-2 py-2">
+                                <strong>⚠️ ALERTA DE BUSCA ATIVA ESCOLAR:</strong> O estudante encontra-se abaixo do limite mínimo de 75% de frequência. Solicita-se comparecimento dos responsáveis à secretaria escolar.
+                            </div>
+                        ` : `
+                            <div class="alert alert-success mb-0 mt-2 py-2">
+                                <strong>✅ Assiduidade Regular:</strong> O estudante cumpre os parâmetros legais de frequência escolar.
+                            </div>
+                        `}
+                    </div>
+                </div>
+            `;
+
+            const textoBoletimVoz =
+                `Boletim escolar de ${a.nome}, turma ${a.turma}. ` +
+                `Nota 1: ${a.nota1}. Nota 2: ${a.nota2}. Média bimestral: ${a.media}. ` +
+                `Frequência acumulada: ${a.frequencia_pct} por cento, com ${a.presencas} presenças em ${a.total_aulas} aulas. ` +
+                `Situação atual: ${a.status}.`;
+
+            document.getElementById("btnOuvirBoletim").onclick = () => lerTextoEmVozAlta(textoBoletimVoz);
+
+            const modal = new bootstrap.Modal(document.getElementById("modalBoletim"));
+            modal.show();
+        }
+
+        // Cadastro de Novo Aluno
+        document.getElementById("formNovoAluno").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const payload = {
+                ra: document.getElementById("raAluno").value,
+                nome: document.getElementById("nomeAluno").value,
+                turma: document.getElementById("turmaAluno").value,
+                nota1: parseFloat(document.getElementById("nota1Aluno").value),
+                nota2: parseFloat(document.getElementById("nota2Aluno").value),
+                total_aulas: parseInt(document.getElementById("aulasAluno").value, 10),
+                presencas: parseInt(document.getElementById("presencasAluno").value, 10)
+            };
+
+            const resp = await fetch("/api/alunos", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (resp.ok) {
+                e.target.reset();
+                anunciarParaLeitorDeTela(`Estudante ${payload.nome} cadastrado com sucesso.`);
+                carregarAlunos();
+            } else {
+                const erro = await resp.json();
+                alert(erro.erro || "Erro ao cadastrar estudante.");
+            }
+        });
+
+        // Carrega Comunicados do Mural
+        async function carregarComunicados() {
+            const resp = await fetch("/api/comunicados");
+            const comunicados = await resp.json();
+            const container = document.getElementById("listaComunicados");
+            container.innerHTML = "";
+
+            comunicados.forEach(c => {
+                let badgeClass = "bg-secondary";
+                if (c.prioridade === "Urgente") badgeClass = "bg-danger";
+                else if (c.prioridade === "Importante") badgeClass = "bg-warning text-dark";
+
+                const textoParaLeitura = `Comunicado ${c.prioridade}: ${c.titulo}. ${c.mensagem}. Publicado por ${c.autor}.`;
+
+                const card = document.createElement("article");
+                card.className = "p-3 border rounded";
+                card.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+                        <span class="badge ${badgeClass}">${c.prioridade}</span>
+                        <small class="text-muted">${c.data_pub}</small>
+                    </div>
+                    <h3 class="h6 fw-bold mt-1 mb-1">${c.titulo}</h3>
+                    <p class="small mb-2">${c.mensagem}</p>
+                    <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                        <small class="text-muted fw-semibold">${c.autor}</small>
+                        <div class="d-flex gap-1">
+                            <button type="button" class="btn btn-sm btn-outline-primary fw-semibold recurso-v2"
+                                onclick='lerTextoEmVozAlta(${JSON.stringify(textoParaLeitura)})'
+                                aria-label="Ouvir comunicado em voz alta: ${c.titulo}">
+                                <i class="bi bi-volume-up-fill" aria-hidden="true"></i> Ouvir Comunicado
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                onclick="excluirComunicado(${c.id})"
+                                aria-label="Excluir comunicado ${c.titulo}">
+                                <i class="bi bi-trash" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Publica Novo Comunicado
+        document.getElementById("formComunicado").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const payload = {
+                titulo: document.getElementById("tituloComunicado").value,
+                prioridade: document.getElementById("prioridadeComunicado").value,
+                mensagem: document.getElementById("mensagemComunicado").value,
+                autor: "Coordenação / Secretaria"
+            };
+
+            const resp = await fetch("/api/comunicados", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (resp.ok) {
+                e.target.reset();
+                anunciarParaLeitorDeTela(`Comunicado ${payload.titulo} publicado no mural.`);
+                carregarComunicados();
+            }
+        });
+
+        async function excluirComunicado(id) {
+            await fetch(`/api/comunicados/${id}`, { method: "DELETE" });
+            anunciarParaLeitorDeTela("Comunicado removido do mural.");
+            carregarComunicados();
+        }
+
+        // Inicialização ao abrir a página
+        window.addEventListener("DOMContentLoaded", () => {
+            carregarAlunos();
+            carregarComunicados();
+        });
+    </script>
+</body>
+</html>
